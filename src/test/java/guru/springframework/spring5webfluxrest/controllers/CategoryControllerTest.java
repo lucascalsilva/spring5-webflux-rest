@@ -15,6 +15,7 @@ import reactor.core.publisher.Mono;
 
 import static guru.springframework.spring5webfluxrest.constants.ApplicationConstants.API_CATEGORIES_PATH;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
@@ -76,5 +77,39 @@ class CategoryControllerTest {
                 .body(categoryMono, Category.class)
                 .exchange()
                 .expectStatus().isOk();
+    }
+
+    @Test
+    void testPatchCategory(){
+        Category category = Category.builder().description("Cat1").build();
+        Category foundCategory = Category.builder().description("Cat2").build();
+
+        given(categoryRepository.findById(anyString())).willReturn(Mono.just(foundCategory));
+        given(categoryRepository.save(any(Category.class))).willReturn(Mono.just(foundCategory));
+
+        Mono<Category> categoryMono = Mono.just(category);
+
+        webTestClient.patch().uri(API_CATEGORIES_PATH + "/1")
+                .body(categoryMono, Category.class)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(Category.class)
+                .isEqualTo(foundCategory);
+    }
+
+    @Test
+    void testPatchCategoryNoChanges(){
+        Category category = Category.builder().description("Cat1").build();
+
+        given(categoryRepository.findById(anyString())).willReturn(Mono.just(category));
+
+        Mono<Category> categoryMono = Mono.just(category);
+
+        webTestClient.patch().uri(API_CATEGORIES_PATH + "/1")
+                .body(categoryMono, Category.class)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(Category.class)
+                .isEqualTo(category);
     }
 }

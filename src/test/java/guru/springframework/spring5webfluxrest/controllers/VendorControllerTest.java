@@ -20,7 +20,10 @@ import static guru.springframework.spring5webfluxrest.constants.ApplicationConst
 import static guru.springframework.spring5webfluxrest.constants.ApplicationConstants.API_VENDORS_PATH;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class VendorControllerTest {
@@ -85,5 +88,45 @@ class VendorControllerTest {
                 .body(vendorMono, Vendor.class)
                 .exchange()
                 .expectStatus().isOk();
+
+        verify(vendorRepository).save(any());
+    }
+
+    @Test
+    void testPatchVendor(){
+        Vendor vendor = Vendor.builder().firstName("Name1").lastName("Lastname1").build();
+        Vendor foundVendor = Vendor.builder().firstName("Name1").lastName("Lastname123").build();
+
+        given(vendorRepository.findById(anyString())).willReturn(Mono.just(foundVendor));
+        given(vendorRepository.save(any(Vendor.class))).willReturn(Mono.just(foundVendor));
+
+        Mono<Vendor> vendorMono = Mono.just(vendor);
+
+        webTestClient.patch().uri(API_VENDORS_PATH + "/1")
+                .body(vendorMono, Vendor.class)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(Vendor.class)
+                .isEqualTo(foundVendor);
+
+        verify(vendorRepository).save(any());
+    }
+
+    @Test
+    void testPatchVendorNoChanges(){
+        Vendor vendor = Vendor.builder().firstName("Name1").lastName("Lastname1").build();
+
+        given(vendorRepository.findById(anyString())).willReturn(Mono.just(vendor));
+
+        Mono<Vendor> vendorMono = Mono.just(vendor);
+
+        webTestClient.patch().uri(API_VENDORS_PATH + "/1")
+                .body(vendorMono, Vendor.class)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(Vendor.class)
+                .isEqualTo(vendor);
+
+        verify(vendorRepository, never()).save(any());
     }
 }
